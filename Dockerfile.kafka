@@ -1,10 +1,23 @@
-ARG KAFKA_VERSION="0.11.0-0-r0"
+FROM dckr.loyaltyplant.com/oracle-java-8
+MAINTAINER Alexander Trushnikov <trushnikov@loyaltyplant.com>
 
-FROM docker.io/bitnami/kafka:${KAFKA_VERSION}
-ARG JMX_JAVAAGENT_VERSION="0.12.0"
 
-RUN set -eux; \
-    curl \
+RUN apt update && apt-get install -qy unzip wget curl iproute iputils-ping netcat
+
+RUN useradd -m -d /opt/kafka kafka
+RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Moscow /etc/localtime
+USER kafka
+ENV SCALA_VERSION 2.12
+ENV KAFKA_VERSION 0.11.0.0
+ENV JMX_JAVAAGENT_VERSION 0.12.0
+ENV PATH $PATH:/opt/kafka/bin:/opt/kafka/sbin
+RUN echo $SCALA_VERSION $KAFKA_VERSION
+RUN wget -qO- "http://archive.apache.org/dist/kafka/$KAFKA_VERSION/kafka_$SCALA_VERSION-$KAFKA_VERSION.tgz" | tar zxvf - -C /opt/kafka --strip 1
+RUN curl \
     https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/${JMX_JAVAAGENT_VERSION}/jmx_prometheus_javaagent-${JMX_JAVAAGENT_VERSION}.jar \
-    -o /opt/bitnami/kafka/libs/jmx_prometheus_javaagent-${JMX_JAVAAGENT_VERSION}.jar && \
-    chmod 664 /opt/bitnami/kafka/libs/jmx_prometheus_javaagent-${JMX_JAVAAGENT_VERSION}.jar
+    -o /opt/kafka/libs/jmx_prometheus_javaagent-${JMX_JAVAAGENT_VERSION}.jar && \
+    chmod 666 /opt/kafka/libs/jmx_prometheus_javaagent-${JMX_JAVAAGENT_VERSION}.jar
+
+WORKDIR /opt/kafka
+
+CMD ["kafka-server-start.sh"]
