@@ -7,6 +7,7 @@ RUN apt update && apt-get install -qy unzip wget curl iproute iputils-ping netca
 RUN useradd -m -d /opt/kafka kafka
 RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 USER kafka
+COPY server.properties /config/
 ENV SCALA_VERSION 2.12
 ENV KAFKA_VERSION 0.11.0.0
 ENV JMX_JAVAAGENT_VERSION 0.12.0
@@ -20,4 +21,4 @@ RUN curl \
 
 WORKDIR /opt/kafka
 
-CMD ["kafka-server-start.sh"]
+CMD ["kafka-server-start.sh","/config/server.properties"]
