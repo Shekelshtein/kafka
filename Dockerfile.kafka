@@ -22,3 +22,5 @@ RUN curl \
 WORKDIR /opt/kafka
 
 CMD ["kafka-server-start.sh","/config/server.properties"]
+
+EXPOSE 9092

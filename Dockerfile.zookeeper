@@ -1,0 +1,32 @@
+FROM bellsoft/liberica-runtime-container:jre-17-musl
+MAINTAINER Ilya Evseev <i.evseev@loyaltyplant.com>
+
+ARG USER=zookeeper
+ARG ZOO_UID=1000
+ARG TZNAME=Europe/Moscow
+ARG VERSION=3.5.10
+ARG DISTURL=https://archive.apache.org/dist/zookeeper/zookeeper-$VERSION/apache-zookeeper-$VERSION-bin.tar.gz
+ARG JMX_PROMETHEUS_URL=https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.12.0/jmx_prometheus_javaagent-0.12.0.jar
+COPY zoo.cfg ../conf/ 
+
+RUN adduser -u $ZOO_UID -h /opt/zookeeper -k /dev/null -D $USER && \
+    apk add --no-cache tzdata bash  && \
+    echo $TZNAME > /etc/timezone    && \
+    cp -p /usr/share/zoneinfo/$TZNAME /etc/localtime && \
+    apk del tzdata                  && \
+    mv /usr/sbin/apk /usr/sbin/apk2 && \
+    rm /usr/bin/wget
+
+USER zookeeper
+WORKDIR /opt/zookeeper
+
+RUN busybox wget -O- "$DISTURL" | tar -xzf - --strip 1 && \
+    busybox wget "$JMX_PROMETHEUS_URL"                 && \
+    ln -s jmx_prometheus_javaagent-*.jar jmx_prometheus_javaagent.jar
+
+#COPY --from=mvn /zoocreeper-master/target/zoocreeper-1.0-SNAPSHOT.jar .
+
+ENTRYPOINT ["/opt/zookeeper/bin/zkServer.sh"]
+CMD ["start-foreground"]
+
+

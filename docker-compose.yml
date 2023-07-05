@@ -56,6 +56,12 @@ x-kafka: &kafka
     - zookeeper
 
 x-zookeeper: &zookeeper
+#  build: &zookeeper-build
+#    context: .
+#    dockerfile: Dockerfile.zookeeper
+#    args:
+#      JMX_JAVAAGENT_VERSION: "${JMX_JAVAAGENT_VERSION}"
+
   image: docker.io/bitnami/zookeeper:${ZK_VERSION}
   volumes:
     - "zookeeper:/bitnami"
