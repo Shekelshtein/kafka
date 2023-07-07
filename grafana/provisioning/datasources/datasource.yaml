@@ -1,0 +1,10 @@
+# config file version
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    orgId: 1
+    url: http://192.168.6.8:9090
+    editable: false

@@ -19,7 +19,7 @@ x-consumer: &consumer
     - app
   environment:
     KAFKA_TOPIC: "example"
-    KAFKA_BROKERS: "kafka-1:9092"
+    KAFKA_BROKERS: "kafka-1:9092,kafka-2:9092,kafka-3:9092"
     KAFKA_CONSUMER_GROUP: "example-consumer-group"
   build:
     <<: *app-build
@@ -32,7 +32,7 @@ x-producer: &producer
     - app
   environment:
     KAFKA_TOPIC: "example"
-    KAFKA_BROKERS: "kafka-1:9092"
+    KAFKA_BROKERS: "kafka-1:9092,kafka-2:9092,kafka-3:9092"
   build:
     <<: *app-build
     args:
@@ -46,7 +46,7 @@ x-kafka: &kafka
       JMX_JAVAAGENT_VERSION: "${JMX_JAVAAGENT_VERSION}"
   environment: &kafka-env
     HOME: /opt/kafka
-    KAFKA_CFG_ZOOKEEPER_CONNECT: "zookeeper:2181"
+    KAFKA_CFG_ZOOKEEPER_CONNECT: "192.168.6.8:2181"
     ALLOW_PLAINTEXT_LISTENER: "yes"
     KAFKA_OPTS: >-
       -javaagent:/opt/kafka/libs/jmx_prometheus_javaagent-${JMX_JAVAAGENT_VERSION}.jar=${JMX_JAVAAGENT_PORT}:/etc/kafka/prometheus/kafka.yml
@@ -56,12 +56,6 @@ x-kafka: &kafka
     - zookeeper
 
 x-zookeeper: &zookeeper
-#  build: &zookeeper-build
-#    context: .
-#    dockerfile: Dockerfile.zookeeper
-#    args:
-#      JMX_JAVAAGENT_VERSION: "${JMX_JAVAAGENT_VERSION}"
-
   image: docker.io/bitnami/zookeeper:${ZK_VERSION}
   volumes:
     - "zookeeper:/bitnami"
@@ -76,45 +70,47 @@ x-redpanda-console: &redpanda-console
     CONFIG_FILEPATH: /tmp/config.yml
     CONSOLE_CONFIG_FILE: |
       kafka:
-        brokers: ["kafka-1:9092"]
+        brokers: ["kafka-1:9092", "kafka-2:9092", "kafka-3:9092"]
         schemaRegistry:
           enabled: false
-          urls: ["http://redpanda-0:8081"]
+          urls: ["http://192.168.6.8:8080"]
   ports:
     - ${REDPANDA_CONSOLE_PORT}:8080
   depends_on:
     - kafka-1
+    - kafka-2
+    - kafka-3
 
-x-kafka-exporter: &kafka-exporter
-  image: docker.io/bitnami/kafka-exporter:${KAFKA_EXPORTER_VERSION}
-  restart: unless-stopped
-  command: ["--kafka.server=kafka-1:9092"]
+#x-kafka-exporter: &kafka-exporter
+#  image: docker.io/bitnami/kafka-exporter:${KAFKA_EXPORTER_VERSION}
+#  restart: unless-stopped
+#  command: ["--kafka.server=192.168.6.8:9092"]
   # profiles:
   #   - metrics
 
-x-prometheus: &prometheus
-  image: quay.io/prometheus/prometheus:${PROMETHEUS_VERSION}
-  volumes:
-    - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-  ports:
-    - ${PROMETHEUS_PORT}:9090
+#x-prometheus: &prometheus
+#  image: quay.io/prometheus/prometheus:${PROMETHEUS_VERSION}
+#  volumes:
+#    - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+#  ports:
+#    - ${PROMETHEUS_PORT}:9090
   # profiles:
   #   - metrics
 
-x-grafana: &grafana
-  image: docker.io/grafana/grafana:${GRAFANA_VERSION}
-  user: root
-  restart: unless-stopped
-  ports:
-    - ${GRAFANA_PORT}:3000
-  volumes:
-    - grafana:/var/lib/grafana
-    - ./grafana/provisioning:/etc/grafana/provisioning
-    - ./grafana/dashboards:/var/lib/grafana/dashboards
+#x-grafana: &grafana
+#  image: docker.io/grafana/grafana:${GRAFANA_VERSION}
+#  user: root
+#  restart: unless-stopped
+#  ports:
+#    - ${GRAFANA_PORT}:3000
+#  volumes:
+#    - grafana:/var/lib/grafana
+#    - ./grafana/provisioning:/etc/grafana/provisioning
+#    - ./grafana/dashboards:/var/lib/grafana/dashboards
   # profiles:
   #   - metrics
-  environment:
-    GF_SECURITY_ADMIN_PASSWORD: admin
+#  environment:
+#    GF_SECURITY_ADMIN_PASSWORD: admin
 
 ################################################################################
 
@@ -123,6 +119,12 @@ services:
   consumer-1:
     <<: *consumer
     container_name: consumer-1
+  consumer-2:
+    <<: *consumer
+    container_name: consumer-2
+  consumer-3:
+    <<: *consumer
+    container_name: consumer-3
 
   # Sample producer
   producer:
@@ -147,25 +149,40 @@ services:
       <<: *kafka-env
       KAFKA_BROKER_ID: 1
 
+  # Kafka: broker #2
+  kafka-2:
+    <<: *kafka
+    container_name: kafka-2
+    environment:
+      <<: *kafka-env
+      KAFKA_BROKER_ID: 2
+
+  # Kafka: broker #3
+  kafka-3:
+    <<: *kafka
+    container_name: kafka-3
+    environment:
+      <<: *kafka-env
+      KAFKA_BROKER_ID: 3
   # Grafana
-  grafana:
-    <<: *grafana
-    container_name: grafana
+#  grafana:
+#    <<: *grafana
+#    container_name: grafana
 
   # Prometheus
-  prometheus:
-    <<: *prometheus
-    container_name: prometheus
+#  prometheus:
+#    <<: *prometheus
+#    container_name: prometheus
 
   # Prometheus
-  kafka-exporter:
-    <<: *kafka-exporter
-    container_name: kafka-exporter
+#  kafka-exporter:
+#    <<: *kafka-exporter
+#    container_name: kafka-exporter
 
 ################################################################################
 
 volumes:
   zookeeper:
     driver: local
-  grafana:
-    driver: local
+#  grafana:
+#    driver: local
