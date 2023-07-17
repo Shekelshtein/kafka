@@ -46,7 +46,7 @@ x-kafka: &kafka
       JMX_JAVAAGENT_VERSION: "${JMX_JAVAAGENT_VERSION}"
   environment: &kafka-env
     HOME: /opt/kafka
-    KAFKA_CFG_ZOOKEEPER_CONNECT: "192.168.6.8:2181"
+    KAFKA_CFG_ZOOKEEPER_CONNECT: "zookeeper:2181"
     ALLOW_PLAINTEXT_LISTENER: "yes"
     KAFKA_OPTS: >-
       -javaagent:/opt/kafka/libs/jmx_prometheus_javaagent-${JMX_JAVAAGENT_VERSION}.jar=${JMX_JAVAAGENT_PORT}:/etc/kafka/prometheus/kafka.yml
@@ -73,7 +73,7 @@ x-redpanda-console: &redpanda-console
         brokers: ["kafka-1:9092", "kafka-2:9092", "kafka-3:9092"]
         schemaRegistry:
           enabled: false
-          urls: ["http://192.168.6.8:8080"]
+          urls: ["http://192.168.6.7:8080"]
   ports:
     - ${REDPANDA_CONSOLE_PORT}:8080
   depends_on:
@@ -107,8 +107,8 @@ x-redpanda-console: &redpanda-console
 #    - grafana:/var/lib/grafana
 #    - ./grafana/provisioning:/etc/grafana/provisioning
 #    - ./grafana/dashboards:/var/lib/grafana/dashboards
-  # profiles:
-  #   - metrics
+#  profiles:
+#    - metrics
 #  environment:
 #    GF_SECURITY_ADMIN_PASSWORD: admin
 
@@ -164,7 +164,8 @@ services:
     environment:
       <<: *kafka-env
       KAFKA_BROKER_ID: 3
-  # Grafana
+
+# Grafana
 #  grafana:
 #    <<: *grafana
 #    container_name: grafana
